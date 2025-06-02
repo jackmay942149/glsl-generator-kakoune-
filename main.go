@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -16,6 +17,7 @@ type Graph struct {
 var graph Graph
 
 func main() {
+	fmt.Println("Starting App...")
 	rl.InitWindow(800, 450, "GLSL Generator")
 	defer rl.CloseWindow()
 
@@ -28,8 +30,8 @@ func main() {
 		if len(graph.Nodes) == 0 {
 			rl.DrawText("Press [SPACE] to add a node!", 190, 200, 20, rl.LightGray)
 		} else {
-			for _, rect := range graph.Nodes {
-				rl.DrawRectangleV(rect.Position, rect.Size, rl.Black)
+			for _, node := range graph.Nodes {
+				rl.DrawRectangleV(node.Position, node.Size, rl.Black)
 			}
 		}
 
@@ -39,12 +41,21 @@ func main() {
 			addNode()
 		}
 
+		if rl.IsMouseButtonDown(rl.MouseButtonLeft) {
+			for i, node := range graph.Nodes {
+				rec := rl.Rectangle{X: node.Position.X, Y: node.Position.Y, Width: node.Size.X, Height: node.Size.Y}
+				if rl.CheckCollisionPointRec(rl.GetMousePosition(), rec) {
+					graph.Nodes[i].Position = rl.Vector2Add(rl.GetMousePosition(), rl.Vector2Scale(node.Size, -0.5))
+				}
+			}
+		}
+
 	}
 }
 
 func addNode() {
-	mousePos := rl.GetMousePosition()
 	nodeSize := rl.Vector2{X: 100, Y: 100}
+	mousePos := rl.Vector2Add(rl.GetMousePosition(), rl.Vector2Scale(nodeSize, -0.5))
 	node := Node{Position: mousePos, Size: nodeSize}
 	graph.Nodes = append(graph.Nodes, node)
 }
