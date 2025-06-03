@@ -31,12 +31,13 @@ type Graph struct {
 var graph Graph
 
 func main() {
+	// Start up window
 	fmt.Println("Starting App...")
 	rl.InitWindow(800, 450, "GLSL Generator")
 	defer rl.CloseWindow()
-
 	rl.SetTargetFPS(60)
 
+	// State
 	var selectedNode *Node
 	var selectedPin *Pin
 
@@ -44,6 +45,7 @@ func main() {
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.DarkGray)
 
+		// Draw whole graph
 		if len(graph.Nodes) == 0 {
 			rl.DrawText("Press [SPACE] to add a node!", 190, 200, 20, rl.LightGray)
 		} else {
@@ -52,6 +54,7 @@ func main() {
 			}
 		}
 
+		// Process Input
 		if rl.IsKeyPressed(rl.KeySpace) {
 			addNode()
 		}
@@ -84,11 +87,16 @@ func main() {
 func addNode() {
 	nodeSize := rl.Vector2{X: 100, Y: 100}
 	mousePos := rl.Vector2Add(rl.GetMousePosition(), rl.Vector2Scale(nodeSize, -0.5))
-	pinPos := rl.Vector2Add(mousePos, rl.Vector2{X: 100, Y: 0})
-	p := Pin{IsOut: true, Color: rl.White, Position: pinPos}
-	pins := make([]Pin, 1)
-	pins = append(pins, p)
-	node := Node{Position: mousePos, Size: nodeSize, OutPins: pins}
+	pinPos := rl.Vector2{X: 0, Y: 0}
+	p1 := Pin{IsOut: true, Color: rl.White, Position: pinPos}
+	p2 := Pin{IsOut: false, Color: rl.White, Position: pinPos}
+	p3 := Pin{IsOut: false, Color: rl.White, Position: pinPos}
+	outPins := make([]Pin, 0)
+	inPins := make([]Pin, 0)
+	outPins = append(outPins, p1)
+	inPins = append(inPins, p2, p3)
+	node := Node{Position: mousePos, Size: nodeSize, OutPins: outPins, InPins: inPins}
+	setPinPositions(&node)
 	graph.Nodes = append(graph.Nodes, node)
 }
 
@@ -97,6 +105,11 @@ func selectPin() (*Pin, error) {
 		for j, pin := range node.OutPins {
 			if rl.CheckCollisionPointCircle(rl.GetMousePosition(), pin.Position, 10) {
 				return &node.OutPins[j], nil
+			}
+		}
+		for j, pin := range node.InPins {
+			if rl.CheckCollisionPointCircle(rl.GetMousePosition(), pin.Position, 10) {
+				return &node.InPins[j], nil
 			}
 		}
 	}
@@ -122,7 +135,10 @@ func moveNode(n *Node) {
 
 func setPinPositions(node *Node) {
 	for i := range node.OutPins {
-		node.OutPins[i].Position = rl.Vector2{X: node.Position.X + 100, Y: node.Position.Y - (float32(i) * 10.0)}
+		node.OutPins[i].Position = rl.Vector2{X: node.Position.X + 100, Y: node.Position.Y + float32(i*30.0)}
+	}
+	for i := range node.InPins {
+		node.InPins[i].Position = rl.Vector2{X: node.Position.X, Y: node.Position.Y + float32(i*30.0)}
 	}
 }
 
@@ -139,8 +155,16 @@ func deselectPin(p **Pin) {
 }
 
 func drawNode(n Node) {
+	// Draw Node Base
 	rl.DrawRectangleV(n.Position, n.Size, rl.Black)
-	rl.DrawCircle(int32(n.Position.X+n.Size.X), int32(n.Position.Y), 10, rl.White)
+	// Draw Pins
+	for _, p := range n.InPins {
+		rl.DrawCircle(int32(p.Position.X), int32(p.Position.Y), 10, rl.White)
+	}
+	for _, p := range n.OutPins {
+		rl.DrawCircle(int32(p.Position.X), int32(p.Position.Y), 10, rl.White)
+	}
+	// Draw Connections
 	for _, p := range n.OutPins {
 		if p.Connection != nil {
 			rl.DrawLineV(p.Position, p.Connection.Position, rl.White)
@@ -159,6 +183,9 @@ func tryConnectPin(p *Pin) error {
 	if err == nil {
 		if pin == nil {
 			log.Fatal("Pin Not Found")
+		}
+		if p.IsOut == pin.IsOut {
+			return errors.New("Pin IsOut Matches")
 		}
 		p.Connection = pin
 		pin.Connection = p
