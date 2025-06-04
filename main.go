@@ -16,6 +16,7 @@ type Pin struct {
 }
 
 type Node struct {
+	Type     string
 	Position rl.Vector2
 	Size     rl.Vector2
 	OutPins  []Pin
@@ -85,6 +86,7 @@ func main() {
 }
 
 func addNode() {
+	name := "Add"
 	nodeSize := rl.Vector2{X: 100, Y: 100}
 	mousePos := rl.Vector2Add(rl.GetMousePosition(), rl.Vector2Scale(nodeSize, -0.5))
 	pinPos := rl.Vector2{X: 0, Y: 0}
@@ -95,7 +97,7 @@ func addNode() {
 	inPins := make([]Pin, 0)
 	outPins = append(outPins, p1)
 	inPins = append(inPins, p2, p3)
-	node := Node{Position: mousePos, Size: nodeSize, OutPins: outPins, InPins: inPins}
+	node := Node{Type: name, Position: mousePos, Size: nodeSize, OutPins: outPins, InPins: inPins}
 	setPinPositions(&node)
 	graph.Nodes = append(graph.Nodes, node)
 }
@@ -157,6 +159,11 @@ func deselectPin(p **Pin) {
 func drawNode(n Node) {
 	// Draw Node Base
 	rl.DrawRectangleV(n.Position, n.Size, rl.Black)
+
+	// Draw Node Type
+	width := rl.MeasureText(n.Type, 20)
+	rl.DrawText(n.Type, int32(n.Position.X+n.Size.X/2)-width/2, int32(n.Position.Y), 20, rl.White)
+
 	// Draw Pins
 	for _, p := range n.InPins {
 		rl.DrawCircle(int32(p.Position.X), int32(p.Position.Y), 10, rl.White)
